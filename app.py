@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from dotenv import load_dotenv
+
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -14,7 +14,7 @@ from langchain_core.runnables import RunnablePassthrough
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-load_dotenv()
+
 
 st.set_page_config(
     page_title="RAG Chatbot",
@@ -90,7 +90,8 @@ def build_history() -> str:
 # --------------------------------------------------
 @st.cache_resource
 def load_rag():
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
+
 
     if not os.path.exists(DB_PATH):
         return None
@@ -120,7 +121,8 @@ Question:
 """
     )
 
-    llm = ChatOpenAI(temperature=0)
+    llm = ChatOpenAI(temperature=0, openai_api_key=os.getenv("OPENAI_API_KEY"))
+
 
     rag_chain = (
         {
