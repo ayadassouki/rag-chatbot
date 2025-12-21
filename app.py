@@ -6,6 +6,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
+# Trigger rebuild
 
 # --------------------------------------------------
 # SESSION STATE (MUST BE FIRST STREAMLIT OPERATION)
