@@ -215,7 +215,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
-st.write("KEY PRESENT:", bool(os.getenv("OPENAI_API_KEY")))
+
 
 # ==================================================
 # STREAMLIT CONFIG (MUST BE FIRST UI CALL)
