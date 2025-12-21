@@ -21,6 +21,7 @@ st.set_page_config(
     page_icon="🤖",
     layout="centered"
 )
+st.write("KEY LOADED:", os.getenv("OPENAI_API_KEY") is not None)
 
 # --------------------------------------------------
 # STYLING
@@ -165,7 +166,8 @@ if uploaded_file:
     )
     chunks = splitter.split_documents(docs)
 
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
+
 
     if not chunks:
         st.error("No readable text found in the PDF.")
