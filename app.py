@@ -260,12 +260,13 @@ DB_PATH = "vectorstore"
 # HELPERS
 # ==================================================
 def build_history() -> str:
-    """Build chat history string for the prompt."""
+    messages = st.session_state.get("messages", [])
     lines = []
-    for msg in st.session_state.messages:
+    for msg in messages:
         role = "User" if msg["role"] == "user" else "Assistant"
         lines.append(f"{role}: {msg['content']}")
     return "\n".join(lines)
+
 
 # ==================================================
 # LOAD RAG PIPELINE
