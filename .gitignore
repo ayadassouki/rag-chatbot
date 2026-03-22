@@ -1,1 +1,51 @@
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+build/
+dist/
+
+# === Virtual Environments ===
+venv/
+.env/
+.envrc
+.venv/
+
+# === Data & Temp Files ===
+uploaded.pdf
+*.pdf
+*.csv
+*.json
+*.txt
+*.db
+
+# === Vector Stores / Generated Artifacts ===
+vectorstore/
+index.faiss
+index.pkl
+
+# === Streamlit ===
+.streamlit/
+.cache/
+logs/
+.DS_Store
+
+# === OS Specific ===
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# === Docker ===
+*.log
+docker-compose.override.yml
+
+# === Other secrets or configs ===
 .env
+.env.local
+.env.production
