@@ -1,245 +1,307 @@
+
+# import os
+# import io
+# import streamlit as st
+# from dotenv import load_dotenv
+# from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+# from langchain_community.vectorstores import FAISS
+# from langchain_text_splitters import RecursiveCharacterTextSplitter
+# from langchain_core.prompts import ChatPromptTemplate
+# from langchain_core.runnables import RunnablePassthrough
+# from langchain_core.documents import Document
+# from PyPDF2 import PdfReader
+
+# # =====================================================
+# # SYSTEM & THEME CONFIG
+# # =====================================================
+# load_dotenv()
+# st.set_page_config(page_title="NovaDocs AI", page_icon="🌌", layout="wide")
+
+# # Lovable-inspired "Midnight Tech" CSS
+# st.markdown("""
+#     <style>
+#     /* Main Background */
+#     .stApp { background-color: #0B0E14; color: #94A3B8; }
+    
+#     /* Hide default Streamlit elements for a cleaner look */
+#     #MainMenu {visibility: hidden;}
+#     footer {visibility: hidden;}
+    
+#     /* Sidebar / Left Column Styling */
+#     [data-testid="stVerticalBlock"] > div:first-child {
+#         background-color: #0B0E14;
+#     }
+
+#     /* Document Card Styling */
+#     .doc-card {
+#         background-color: #161B22;
+#         border: 1px solid #1E293B;
+#         border-radius: 8px;
+#         padding: 12px;
+#         margin-bottom: 10px;
+#         display: flex;
+#         align-items: center;
+#         gap: 10px;
+#     }
+    
+#     /* Custom Headers */
+#     .main-header {
+#         font-family: 'JetBrains Mono', monospace;
+#         color: #00D1FF;
+#         font-size: 1.2rem;
+#         letter-spacing: -0.5px;
+#         margin-bottom: 20px;
+#     }
+
+#     /* Chat Input Styling */
+#     .stChatInputContainer {
+#         background-color: #0B0E14 !important;
+#         border-top: 1px solid #1E293B !important;
+#     }
+
+#     /* Assistant Message Styling */
+#     [data-testid="stChatMessage"] {
+#         background-color: #111827;
+#         border: 1px solid #1E293B;
+#         border-radius: 12px;
+#     }
+    
+#     /* Metrics/Status text */
+#     .tech-stat {
+#         font-family: 'JetBrains Mono', monospace;
+#         font-size: 0.8rem;
+#         color: #00D1FF;
+#     }
+#     </style>
+#     """, unsafe_allow_html=True)
+
+# # =====================================================
+# # LOGIC CORES
+# # =====================================================
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+
+# if "messages" not in st.session_state: st.session_state.messages = []
+# if "vectorstore" not in st.session_state: st.session_state.vectorstore = None
+# if "filenames" not in st.session_state: st.session_state.filenames = []
+
+# def build_vectorstore(uploaded_files):
+#     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+#     embeddings = OpenAIEmbeddings(model="text-embedding-3-small", api_key=OPENAI_API_KEY)
+#     all_chunks = []
+#     names = []
+#     for file in uploaded_files:
+#         names.append(file.name)
+#         reader = PdfReader(io.BytesIO(file.read()))
+#         docs = [Document(page_content=p.extract_text(), metadata={"source": file.name, "page": i+1}) 
+#                 for i, p in enumerate(reader.pages) if p.extract_text()]
+#         all_chunks.extend(splitter.split_documents(docs))
+#     st.session_state.filenames = names
+#     return FAISS.from_documents(all_chunks, embeddings)
+
+# def build_chain(vs):
+#     retriever = vs.as_retriever(search_kwargs={"k": 5})
+#     prompt = ChatPromptTemplate.from_template("""
+#     Context: {context}
+#     History: {history}
+#     User: {question}
+#     AI: Answer in a technical, structured format. Mention page numbers.
+#     """)
+#     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=OPENAI_API_KEY)
+#     return (
+#         {"docs": lambda x: retriever.invoke(x["question"]), "question": lambda x: x["question"], "history": lambda x: x["history"]}
+#         | RunnablePassthrough.assign(context=lambda x: "\n\n".join([d.page_content for d in x["docs"]]))
+#         | prompt | llm
+#     )
+
+# # =====================================================
+# # LAYOUT: LOVABLE VIBE
+# # =====================================================
+# # Using two columns to simulate the Lovable layout
+# left_col, right_col = st.columns([1, 3], gap="large")
+
+# with left_col:
+#     st.markdown('<p class="main-header">📄 PDFCHAT</p>', unsafe_allow_html=True)
+    
+#     uploaded_files = st.file_uploader("Upload new PDF", type=["pdf"], accept_multiple_files=True, label_visibility="collapsed")
+    
+#     if uploaded_files and st.session_state.vectorstore is None:
+#         with st.spinner("Indexing..."):
+#             st.session_state.vectorstore = build_vectorstore(uploaded_files)
+#             st.rerun()
+
+#     st.markdown("---")
+#     st.markdown('<p class="tech-stat">DOCUMENTS</p>', unsafe_allow_html=True)
+    
+#     for name in st.session_state.filenames:
+#         st.markdown(f"""
+#             <div class="doc-card">
+#                 <span style="color:#00D1FF">📄</span>
+#                 <span style="font-size:0.9rem; color:#E2E8F0">{name}</span>
+#             </div>
+#         """, unsafe_allow_html=True)
+    
+#     if st.button("Purge Session", use_container_width=True):
+#         st.session_state.clear()
+#         st.rerun()
+
+# with right_col:
+#     # Top status bar
+#     if st.session_state.filenames:
+#         st.markdown(f'<p class="tech-stat">ACTIVE SESSION: {st.session_state.filenames[0]}</p>', unsafe_allow_html=True)
+#     else:
+#         st.markdown('<p class="tech-stat">IDLE ENGINE // WAITING FOR INGEST</p>', unsafe_allow_html=True)
+
+#     # Chat Display
+#     chat_container = st.container(height=500, border=False)
+#     for msg in st.session_state.messages:
+#         chat_container.chat_message(msg["role"]).write(msg["content"])
+
+#     # Chat Input
+#     if question := st.chat_input("Ask about your PDF..."):
+#         st.session_state.messages.append({"role": "user", "content": question})
+#         chat_container.chat_message("user").write(question)
+
+#         if st.session_state.vectorstore:
+#             chain = build_chain(st.session_state.vectorstore)
+#             history = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.messages[-3:]])
+            
+#             with chat_container.chat_message("assistant"):
+#                 response = chain.invoke({"question": question, "history": history})
+#                 st.markdown(response.content)
+#                 st.session_state.messages.append({"role": "assistant", "content": response.content})
+#         else:
+#             st.warning("Please upload a document on the left to start.")
 import os
 import io
-import time
 import streamlit as st
-
-from datetime import datetime
-from typing import List
+from dotenv import load_dotenv
+from PyPDF2 import PdfReader
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain.callbacks.base import BaseCallbackHandler
+from langchain_core.documents import Document
 
-# ================================================
-# CONFIG
-# ================================================
-st.set_page_config(
-    page_title="RAG Chatbot (Secure AI-First Prototype)",
-    page_icon="🤖",
-    layout="wide"
-)
+# =============================
+# 1. Setup
+# =============================
+load_dotenv()
 
-# ================================================
-# SIDEBAR: SETTINGS & SECURITY FEATURES
-# ================================================
-st.sidebar.header("🔐 Session & Developer Settings")
+st.set_page_config(page_title="PDF Chat", layout="wide")
 
-# Hybrid key entry: Default from secrets, optional user override
-DEFAULT_API_KEY = st.secrets.get("OPENAI_API_KEY", None)
-user_api_key = st.sidebar.text_input(
-    "🔑 Enter your OpenAI API key (optional)",
-    type="password"
-)
-OPENAI_API_KEY = user_api_key.strip() if user_api_key else DEFAULT_API_KEY
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if not OPENAI_API_KEY:
-    st.error("No OpenAI API key found. Please add it to Streamlit Secrets or input one in the sidebar.")
+    st.error("Missing OPENAI_API_KEY in your .env file.")
     st.stop()
 
-# Developer mode toggle
-DEV_MODE = st.sidebar.checkbox("👩‍💻 Developer Mode", value=False)
-
-# Manual purge button
-if st.sidebar.button("🧹 Purge Session & Clear Memory"):
-    st.session_state.clear()
-    st.experimental_rerun()
-
-# ================================================
-# APP HEADER
-# ================================================
-st.title("📄 Secure RAG Document Chatbot")
-st.caption("In-memory, privacy-first document Q&A system 🧠")
-
-INACTIVITY_LIMIT = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30")) * 60  # seconds
-
-
-# ================================================
-# SESSION STATE INITIALIZATION
-# ================================================
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
+# Session state
 if "vectorstore" not in st.session_state:
     st.session_state.vectorstore = None
 
-if "last_activity" not in st.session_state:
-    st.session_state.last_activity = time.time()
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# Timeout logic
-now = time.time()
-if now - st.session_state.last_activity > INACTIVITY_LIMIT:
-    st.warning("Session expired due to inactivity. Clearing data for privacy.")
-    st.session_state.clear()
-    st.experimental_rerun()
-else:
-    st.session_state.last_activity = now  # refresh activity timestamp
+# =============================
+# 2. PDF Processing
+# =============================
+def build_vectorstore(uploaded_files):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200
+    )
 
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small",
+        api_key=OPENAI_API_KEY
+    )
 
-# ================================================
-# CALLBACK HANDLER FOR STREAMING OUTPUT
-# ================================================
-class StreamHandler(BaseCallbackHandler):
-    def __init__(self, placeholder):
-        self.placeholder = placeholder
-        self.streamed_text = ""
-
-    def on_llm_new_token(self, token, **kwargs):
-        self.streamed_text += token
-        self.placeholder.markdown(self.streamed_text)
-
-
-# ================================================
-# RAG PIPELINE BUILDER
-# ================================================
-def build_history() -> str:
-    lines = []
-    for msg in st.session_state.messages:
-        role = "User" if msg["role"] == "user" else "Assistant"
-        lines.append(f"{role}: {msg['content']}")
-    return "\n".join(lines)
-
-
-def build_vectorstore_from_pdfs(uploaded_files, api_key: str):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    embeddings = OpenAIEmbeddings(openai_api_key=api_key)
     all_chunks = []
 
     for file in uploaded_files:
-        try:
-            bytes_data = io.BytesIO(file.read())
-            loader = PyPDFLoader(bytes_data)
-            docs = loader.load()
-            chunks = text_splitter.split_documents(docs)
-            all_chunks.extend(chunks)
-        except Exception as e:
-            if DEV_MODE:
-                st.error(f"Error reading {file.name}: {e}")
-            else:
-                st.error(f"Failed to read {file.name}. It may be corrupted.")
+        reader = PdfReader(io.BytesIO(file.read()))
+        pages = []
 
-    if not all_chunks:
-        st.error("No readable text found in the uploaded PDFs.")
-        return None
+        for i, page in enumerate(reader.pages):
+            text = page.extract_text()
+            if text:
+                pages.append(
+                    Document(
+                        page_content=text,
+                        metadata={"page": i + 1}
+                    )
+                )
+
+        chunks = splitter.split_documents(pages)
+        all_chunks.extend(chunks)
 
     return FAISS.from_documents(all_chunks, embeddings)
 
+# =============================
+# 3. UI
+# =============================
+st.title("📄 Simple PDF Chat")
 
-def build_rag_chain(vectorstore, api_key: str):
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
-    prompt = ChatPromptTemplate.from_template(
-        """
-You are a helpful assistant answering questions about the user's uploaded documents.
-
-Conversation so far:
-{history}
-
-Use ONLY the context below to answer. If the answer is not grounded in the context, say "I don't know."
-
-Context:
-{context}
-
-Question:
-{question}
-
-After replying, list each referenced source with page number or snippet for citation.
-        """
-    )
-
-    llm = ChatOpenAI(
-        model="gpt-4o",
-        temperature=0,
-        streaming=True,
-        callbacks=[],
-        openai_api_key=api_key,
-    )
-
-    rag_chain = (
-        {
-            "docs": retriever,
-            "question": RunnablePassthrough(),
-            "history": lambda _: build_history(),
-        }
-        | RunnablePassthrough.assign(
-            context=lambda x: "\n\n".join(
-                f"(Page {d.metadata.get('page', 'N/A')}) {d.page_content[:500]}" for d in x["docs"]
-            )
-        )
-        | prompt
-        | llm
-    )
-
-    return rag_chain
-
-
-# ================================================
-# FILE UPLOAD & VECTOR STORE BUILD
-# ================================================
 uploaded_files = st.file_uploader(
-    "📥 Upload one or more PDFs",
+    "Upload PDF(s)",
     type=["pdf"],
     accept_multiple_files=True
 )
 
-if uploaded_files:
-    with st.spinner("Processing documents and generating embeddings..."):
-        st.session_state.vectorstore = build_vectorstore_from_pdfs(uploaded_files, OPENAI_API_KEY)
-    if st.session_state.vectorstore:
-        st.success("✅ Documents processed in memory. You can now chat.")
+if uploaded_files and st.session_state.vectorstore is None:
+    with st.spinner("Processing PDFs..."):
+        st.session_state.vectorstore = build_vectorstore(uploaded_files)
+        st.success("PDFs indexed successfully.")
 
-
-# ================================================
-# LOAD RAG CHAIN
-# ================================================
-rag_chain = None
-if st.session_state.vectorstore:
-    rag_chain = build_rag_chain(st.session_state.vectorstore, OPENAI_API_KEY)
-
-# ================================================
-# CHAT INTERFACE
-# ================================================
+# =============================
+# 4. Chat
+# =============================
 for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
 
-question = st.chat_input("Ask a question about your uploaded documents...")
+if question := st.chat_input("Ask something about your PDF..."):
 
-if question:
-    st.session_state.last_activity = time.time()
-    st.session_state.messages.append({"role": "user", "content": question})
-    st.chat_message("user").write(question)
+    st.session_state.messages.append(
+        {"role": "user", "content": question}
+    )
 
-    if not rag_chain:
-        response_text = "Please upload PDFs first."
+    with st.chat_message("user"):
+        st.write(question)
+
+    if st.session_state.vectorstore is None:
+        with st.chat_message("assistant"):
+            st.write("Please upload a PDF first.")
     else:
-        try:
-            with st.chat_message("assistant"):
-                placeholder = st.empty()
-                stream_handler = StreamHandler(placeholder)
+        retriever = st.session_state.vectorstore.as_retriever(k=5)
 
-                rag_chain.llm.callbacks = [stream_handler]
-                result = rag_chain.invoke(question)
-                response_text = stream_handler.streamed_text or result.content
-        except Exception as e:
-            if DEV_MODE:
-                st.exception(e)
-            response_text = (
-                "⚠️ An error occurred while generating the response. Try again later."
-            )
+        docs = retriever.invoke(question)
+        context = "\n\n".join(
+            [f"(Page {d.metadata.get('page')}) {d.page_content}" for d in docs]
+        )
 
-    st.session_state.messages.append({"role": "assistant", "content": response_text})
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=0,
+            api_key=OPENAI_API_KEY
+        )
 
+        prompt = f"""
+        Use the context below to answer the question.
+        Mention page numbers when possible.
 
-# ================================================
-# CITATION DISPLAY
-# ================================================
-if rag_chain and DEV_MODE and st.session_state.vectorstore:
-    st.write("---")
-    st.subheader("📚 Retrieved Source Snippets (Developer View)")
-    retriever_preview = st.session_state.vectorstore.as_retriever(search_kwargs={"k": 6})
-    sample_docs = retriever_preview.get_relevant_documents("Sample inspection prompt")
-    for doc in sample_docs:
-        with st.expander(f"File: {doc.metadata.get('source', 'unknown')} - Page: {doc.metadata.get('page', 'N/A')}"):
-            st.write(doc.page_content[:800])
+        Context:
+        {context}
+
+        Question:
+        {question}
+        """
+
+        response = llm.invoke(prompt)
+
+        with st.chat_message("assistant"):
+            st.write(response.content)
+
+        st.session_state.messages.append(
+            {"role": "assistant", "content": response.content}
+        )
